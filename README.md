@@ -1,191 +1,181 @@
 
 # Axiom Agent
 
-一个强大的基于对话的AI智能助手，使用JSON格式工具调用执行本地任务。
+Axiom Agent 是一个强大的可自定义工具智能助手，基于大语言模型构建，能够处理各种任务并让您轻松添加自定义工具。
 
-![Axiom Agent](https://img.shields.io/badge/Axiom-Agent-blue)
-![Python 3.7+](https://img.shields.io/badge/Python-3.7%2B-green)
-![License MIT](https://img.shields.io/badge/License-MIT-yellow)
+## 🌟 主要特点
 
-## 🌟 特性
+- **可自定义工具系统** - 轻松添加自己的工具
+- **对话式交互** - 自然的对话流程
+- **内置核心工具** - 文件操作、命令执行等
+- **灵活的工具调用格式** - 支持多种调用格式
+- **健壮的错误处理** - 自动重试和清晰的错误信息
+- **自动上下文管理** - 优化令牌使用
 
-- **五种内置工具**：读取文件、写入文件、执行命令、记录注释和提供答案
-- **对话式交互**：通过聊天方式与AI进行多轮上下文交互
-- **多编码支持**：稳健处理各种字符集的命令输出
-- **任务规划**：使用注释工具进行任务规划和进度追踪
-- **低依赖**：仅依赖requests和psutil库
+## 📁 项目结构
 
-## 📋 需求
-
-- Python 3.7 或更高版本
-- 依赖包：
-  - requests
-  - psutil
-
-## 🚀 安装
-
-1. 克隆仓库：
-
-```bash
-git clone https://github.com/yourusername/axiom-agent.git
-cd axiom-agent
+```
+axiom-agent/
+  ├── main.py          # 主程序
+  ├── config.json      # 配置文件
+  ├── tools.json       # 工具定义
+  └── tools/           # 工具实现文件夹
+      └── example_tool.py  # 示例自定义工具
 ```
 
-2. 安装依赖：
+## 🚀 快速开始
+
+### 安装依赖
 
 ```bash
 pip install requests psutil
 ```
 
-## ⚙️ 配置
+### 配置
 
-第一次运行程序时，它会交互式地询问API配置信息：
-
-- API的基础URL (例如: https://api.openai.com/v1)
-- API密钥
-- 模型名称 (例如: gpt-4o, gpt-4, gpt-3.5-turbo等)
-
-这些信息将存储在`config.json`文件中，以后可以手动编辑。
-
-## 🖥️ 使用方法
-
-运行主程序：
-
-```bash
-python axiom_agent.py
-```
-
-然后，在提示符处输入您的指令。例如：
-
-```
-> 帮我分析当前目录中的所有Python文件，并生成总结报告
-```
-
-### 常用命令示例
-
-1. **查找和分析文件**：
-   ```
-   > 查找当前目录下所有.py文件并分析其内容
-   ```
-
-2. **创建新项目**：
-   ```
-   > 创建一个简单的Flask网站，包含主页和关于页面
-   ```
-
-3. **数据处理**：
-   ```
-   > 解析log.txt文件，统计错误发生次数并绘制图表
-   ```
-
-4. **系统操作**：
-   ```
-   > 检查系统性能并生成报告
-   ```
-
-5. **代码审查**：
-   ```
-   > 审查main.py文件中的代码质量并提出改进建议
-   ```
-
-## 🔧 内置工具
-
-Axiom Agent包含五种强大的工具：
-
-1. **reader工具**：读取文件内容
-2. **writer工具**：创建或修改文件
-3. **command工具**：执行系统命令
-4. **comment工具**：记录项目规划和执行进度
-5. **answer工具**：提供答案并等待用户进一步指令
-
-每个工具都使用JSON格式进行调用，例如：
+1. 编辑 `config.json`：
 
 ```json
 {
-  "type": "command",
+  "base_url": "https://api.openai.com/v1",
+  "api_key": "YOUR_API_KEY_HERE",
+  "model_name": "gpt-4o",
+  "max_retries": 3,
+  "retry_delay": 5,
+  "timeout": 90,
+  "max_tokens": 16000,
+  "max_content_size": 10240
+}
+```
+
+2. 运行助手：
+
+```bash
+python main.py
+```
+
+## 🛠️ 内置工具
+
+Axiom Agent 内置了六个核心工具：
+
+| 工具名 | 描述 | 主要参数 |
+|-------|------|---------|
+| read | 读取文件内容 | file_path |
+| write | 写入文件内容 | file_path, content, mode |
+| execute | 执行系统命令 | command |
+| info | 显示重要信息 | content |
+| interact | 与用户交互 | content, prompt |
+| exit | 结束当前任务 | message |
+
+## ✨ 添加自定义工具
+
+### 步骤 1: 创建工具实现
+
+在 `tools` 目录下创建一个 Python 文件 (例如 `my_tool.py`):
+
+```python
+def execute(**kwargs):
+    """
+    工具执行函数
+    """
+    try:
+        # 从kwargs获取参数
+        param1 = kwargs.get('param1', 'default_value')
+        
+        # 执行工具功能
+        result = f"自定义工具结果: {param1}"
+        
+        # 返回结果
+        return {
+            "success": True,
+            "result": result
+        }
+    except Exception as e:
+        return {
+            "success": False,
+            "result": f"工具执行失败: {str(e)}"
+        }
+```
+
+### 步骤 2: 在tools.json中注册工具
+
+```json
+"my_tool": {
+  "description": "我的自定义工具，用于...",
+  "implementation": "my_tool.py",
   "args": {
-    "command": "ls -la"
+    "param1": "参数1的描述",
+    "param2": "参数2的描述"
   }
 }
 ```
 
-## 🧠 工作流程
+## 🔄 工具调用格式
 
-1. **初始规划**：对于复杂任务，AI会先使用comment工具记录整体计划
-2. **执行操作**：使用reader/writer/command等工具执行具体任务
-3. **进度跟踪**：在关键步骤完成后记录进度
-4. **结果反馈**：使用answer工具提供阶段性结果或最终答案
-5. **持续交互**：根据用户后续指令继续执行或结束任务
+Axiom Agent 支持多种工具调用格式：
 
-## 👨‍💻 示例会话
+### 1. 标准JSON格式
 
-```
-> 创建一个简单的Python计算器程序
-
-[注释]
---------------------------------------------------
-任务规划:
-1. 创建一个基本的计算器Python文件
-2. 实现加减乘除四则运算功能
-3. 添加错误处理
-4. 添加用户交互界面
-5. 测试程序功能
-
-当前进度: 准备创建计算器文件
---------------------------------------------------
-
-执行写入操作: calculator.py (模式: w)
-结果 (成功: True): 文件写入成功: calculator.py
-
-[最终答案]
-==================================================
-已创建一个简单的Python计算器程序(calculator.py)，具有以下功能：
-- 基本的加减乘除运算
-- 输入验证和错误处理
-- 简单的命令行界面
-- 支持连续计算和历史记录
-
-您可以通过运行`python calculator.py`来启动计算器。
-==================================================
-
-> 为计算器添加平方根和幂运算功能
-
-执行读取操作: calculator.py
-结果 (成功: True): def add(x, y):
-    return x + y
-
-def subtract(x, y):...
-
-执行写入操作: calculator.py (模式: w)
-结果 (成功: True): 文件写入成功: calculator.py
-
-[最终答案]
-==================================================
-已为计算器添加平方根和幂运算功能：
-- 添加了sqrt(x)函数用于计算平方根
-- 添加了power(x, y)函数用于计算x的y次幂
-- 更新了菜单选项，包含这两个新功能
-- 添加了相应的错误处理
-
-您可以通过运行`python calculator.py`来使用更新后的计算器。
-==================================================
+```json
+{
+  "name": "tool_name",
+  "args": {
+    "arg1": "value1",
+    "arg2": "value2"
+  }
+}
 ```
 
-## 📝 注意事项
+### 2. 函数调用样式
 
-- 输入"bye"可以退出程序
-- 大文件内容会自动截断以优化性能
-- 命令输出的字符编码会自动处理，支持多种编码格式
+```
+tool_name(arg1="value1", arg2="value2")
+```
 
-## 🔒 安全性
+### 3. 自然语言描述
 
-- 默认情况下，该Agent可以执行系统命令，请谨慎使用
-- 在共享环境或生产环境中使用时，建议添加额外的安全限制
+```
+使用read工具读取文件"example.txt"
+```
+
+## 📝 示例使用场景
+
+### 文件分析
+
+```
+> 分析当前目录下的Python文件并统计行数
+
+[工具执行过程...]
+
+总共发现5个Python文件，共1250行代码
+```
+
+### 数据处理
+
+```
+> 读取sales.csv，计算总销售额并生成报告
+
+[工具执行过程...]
+
+已生成销售报告report.md，总销售额: $12,536.42
+```
+
+## 🔒 注意事项
+
+- 始终验证外部输入以防安全风险
+- 工具的execute函数必须处理所有可能的异常
+- 确保您有权限执行所请求的操作
 
 ## 📄 许可证
 
-本项目采用MIT许可证。详情请参阅[LICENSE](LICENSE)文件。
+MIT
 
----
+## 🙏 贡献
 
-**Axiom Agent** - 让AI为您本地工作
+欢迎提交问题和改进建议！
+
+1. Fork 项目
+2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
+3. 提交更改 (`git commit -m 'Add amazing feature'`)
+4. 推送到分支 (`git push origin feature/amazing-feature`)
+5. 打开 Pull Request
