@@ -7,6 +7,7 @@ import requests
 import importlib.util
 import re
 import time
+import shlex
 from typing import Dict, List, Union, Optional, Any, Tuple
 
 class ConfigManager:
@@ -62,6 +63,153 @@ class ConfigManager:
         return self.config
 
 
+class SecurityManager:
+    """安全管理器：处理敏感命令检查和确认"""
+    
+    def __init__(self, security_config_path: str = "security.json"):
+        self.security_config_path = security_config_path
+        self.sensitive_commands = []
+        self.load_security_config()
+    
+    def load_security_config(self) -> None:
+        """加载安全配置文件"""
+        if os.path.exists(self.security_config_path):
+            try:
+                with open(self.security_config_path, 'r', encoding='utf-8') as f:
+                    security_config = json.load(f)
+                    self.sensitive_commands = security_config.get("sensitive_commands", [])
+                    print(f"已加载 {len(self.sensitive_commands)} 个敏感命令定义")
+            except Exception as e:
+                print(f"加载安全配置失败: {e}")
+                self.create_default_security_config()
+        else:
+            self.create_default_security_config()
+    
+    def create_default_security_config(self) -> None:
+        """创建默认安全配置文件"""
+        default_config = {
+            "sensitive_commands": [
+                {
+                    "pattern": "rm",
+                    "description": "删除文件或目录命令",
+                    "os": ["linux", "darwin"]
+                },
+                {
+                    "pattern": "rmdir",
+                    "description": "删除目录命令",
+                    "os": ["linux", "darwin", "windows"]
+                },
+                {
+                    "pattern": "del",
+                    "description": "删除文件命令",
+                    "os": ["windows"]
+                },
+                {
+                    "pattern": "format",
+                    "description": "格式化磁盘命令",
+                    "os": ["windows", "linux", "darwin"]
+                },
+                {
+                    "pattern": "fdisk",
+                    "description": "磁盘分区命令",
+                    "os": ["linux", "darwin"]
+                },
+                {
+                    "pattern": "mkfs",
+                    "description": "创建文件系统命令",
+                    "os": ["linux", "darwin"]
+                },
+                {
+                    "pattern": ":(){",
+                    "description": "fork炸弹",
+                    "os": ["linux", "darwin"]
+                },
+                {
+                    "pattern": "dd",
+                    "description": "数据复制命令",
+                    "os": ["linux", "darwin"]
+                },
+                {
+                    "pattern": "chmod",
+                    "description": "修改文件权限命令",
+                    "os": ["linux", "darwin"]
+                },
+                {
+                    "pattern": "chown",
+                    "description": "修改文件所有者命令",
+                    "os": ["linux", "darwin"]
+                },
+                {
+                    "pattern": "sudo",
+                    "description": "超级用户执行命令",
+                    "os": ["linux", "darwin"]
+                },
+                {
+                    "pattern": "diskpart",
+                    "description": "磁盘分区工具",
+                    "os": ["windows"]
+                }
+            ]
+        }
+        
+        try:
+            with open(self.security_config_path, 'w', encoding='utf-8') as f:
+                json.dump(default_config, f, indent=2)
+            self.sensitive_commands = default_config["sensitive_commands"]
+            print(f"已创建默认安全配置文件: {self.security_config_path}")
+        except Exception as e:
+            print(f"创建默认安全配置文件失败: {e}")
+    
+    def is_sensitive_command(self, command: str) -> Tuple[bool, str]:
+        """检查命令是否为敏感命令
+        
+        Args:
+            command: 要检查的命令
+            
+        Returns:
+            (是否敏感, 敏感描述)
+        """
+        current_os = platform.system().lower()
+        # 解析命令获取第一个部分（命令名）
+        try:
+            cmd_parts = shlex.split(command)
+            if not cmd_parts:
+                return False, ""
+            
+            base_cmd = cmd_parts[0].lower()
+            
+            # 检查是否为定义的敏感命令
+            for sensitive_cmd in self.sensitive_commands:
+                pattern = sensitive_cmd.get("pattern", "").lower()
+                # 检查操作系统兼容性
+                cmd_os = sensitive_cmd.get("os", [])
+                
+                # 如果该命令适用于当前操作系统
+                if not cmd_os or current_os in cmd_os:
+                    # 精确匹配命令开头
+                    if base_cmd == pattern or base_cmd.startswith(pattern + " "):
+                        return True, sensitive_cmd.get("description", "敏感命令")
+                    
+                    # 检查命令选项中的敏感模式
+                    if pattern in command:
+                        # 特别危险的命令模式，如 rm -rf /
+                        if (base_cmd == "rm" and "-rf" in cmd_parts and 
+                            any(arg == "/" or arg == "*" for arg in cmd_parts)):
+                            return True, "危险的递归删除命令"
+                        
+                        # 其他敏感模式
+                        if (base_cmd == "dd" and 
+                            any(arg.startswith("of=") for arg in cmd_parts)):
+                            return True, "数据写入磁盘命令"
+            
+            return False, ""
+            
+        except Exception as e:
+            print(f"检查敏感命令异常: {e}")
+            # 出现异常时谨慎起见作为敏感命令处理
+            return True, "命令检查异常，请谨慎执行"
+
+
 class ToolManager:
     """工具管理器：加载和管理工具"""
     
@@ -70,6 +218,7 @@ class ToolManager:
         self.tools_dir = tools_dir
         self.tools = {}
         self.tool_descriptions = {}
+        self.security_manager = SecurityManager()
         self.load_tools()
     
     def load_tools(self) -> None:
@@ -261,12 +410,32 @@ class ToolManager:
                 "result": f"写入文件失败: {str(e)}"
             }
     
-    @staticmethod
-    def execute_command(command: str) -> Dict:
-        """执行系统命令"""
+    def execute_command(self, command: str) -> Dict:
+        """执行系统命令，带有敏感命令确认"""
         import subprocess
         
         try:
+            # 检查是否为敏感命令
+            is_sensitive, description = self.security_manager.is_sensitive_command(command)
+            
+            if is_sensitive:
+                # 显示警告并请求确认
+                print("\n[⚠️ 安全警告]")
+                print("=" * 60)
+                print(f"检测到敏感命令: {command}")
+                print(f"描述: {description}")
+                print("=" * 60)
+                
+                confirmation = input("\n此命令可能有风险，是否确认执行? (y/N): ").strip().lower()
+                
+                if confirmation != 'y':
+                    return {
+                        "success": False,
+                        "result": "用户取消了敏感命令的执行"
+                    }
+                
+                print("用户已确认执行敏感命令。\n")
+            
             # 使用subprocess执行命令并捕获输出，修复编码问题
             process = subprocess.Popen(
                 command, 
@@ -843,6 +1012,11 @@ class AIAgent:
    - 使用interact工具在需要用户输入时与用户交互
    - 使用exit工具结束任务
 
+4. 安全考虑:
+   - 执行危险命令(如rm、del、format等)时系统会要求用户确认
+   - 确保解释清楚命令的目的和可能的影响
+   - 在执行修改系统状态的命令前先做好检查和备份
+
 【注意事项】
 - 避免重复使用info工具，提供信息后立即执行
 - 每次只返回一个工具调用，不要添加额外说明
@@ -869,6 +1043,11 @@ class AIAgent:
         self.dialogue_manager.add_user_message(user_request)
         
         while True:
+            # 检查是否要退出
+            if user_request.lower() == "bye":
+                print("\n感谢使用Axiom Agent智能助手，再见!")
+                break
+                
             # 获取当前对话历史并发送请求
             messages = self.dialogue_manager.get_messages()
             response = self.model_communicator.send_request(messages)
