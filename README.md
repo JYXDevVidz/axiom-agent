@@ -1,91 +1,137 @@
+# Axiom Agent API 🤖
 
-# Axiom Agent
+[![GitHub stars](https://img.shields.io/github/stars/JYXDevVidz/axiom-agent?style=social)](https://github.com/JYXDevVidz/axiom-agent/stargazers)
+[![GitHub license](https://img.shields.io/github/license/JYXDevVidz/axiom-agent)](https://github.com/JYXDevVidz/axiom-agent/blob/main/LICENSE)
+[![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/downloads/)
 
-Axiom Agent 是一个强大的可自定义工具智能助手，基于大语言模型构建，能够处理各种任务并让您轻松添加自定义工具。
+> 一个模块化的智能代理 API 系统，让 AI 为您执行实际任务 🔥
 
-## 🌟 主要特点
+## 📖 简介
 
-- **可自定义工具系统** - 轻松添加自己的工具
-- **对话式交互** - 自然的对话流程
-- **内置核心工具** - 文件操作、命令执行等
-- **灵活的工具调用格式** - 支持多种调用格式
-- **健壮的错误处理** - 自动重试和清晰的错误信息
-- **自动上下文管理** - 优化令牌使用
+Axiom Agent API 是一个通过 RESTful 接口与大型语言模型 (LLM) 交互的智能代理系统。它设计为高度模块化和可扩展，通过插件式工具架构使 AI 能够执行实际任务，如文件操作、命令执行、用户交互等。
 
-## 📁 项目结构
+![Axiom Agent 架构](https://via.placeholder.com/800x400?text=Axiom+Agent+Architecture)
 
-```
-axiom-agent/
-  ├── main.py          # 主程序
-  ├── config.json      # 配置文件
-  ├── tools.json       # 工具定义
-  └── tools/           # 工具实现文件夹
-      └── example_tool.py  # 示例自定义工具
-```
+## ✨ 主要特性
+
+- 🔌 **完全模块化** - 所有功能通过工具模块实现，易于扩展
+- 🌐 **RESTful API** - 简单的 HTTP 接口，易于集成到任何应用
+- 💬 **会话管理** - 支持多用户、多会话并行处理
+- ⚙️ **工具丰富** - 文件读写、命令执行、交互式输入等
+- 🔒 **安全机制** - 敏感操作确认，防止危险命令执行
+- 🧠 **上下文记忆** - 会话中保持对话历史和上下文
+- 🚀 **易于部署** - 简单配置，支持 Docker 部署
 
 ## 🚀 快速开始
 
-### 安装依赖
+### 安装
 
 ```bash
-pip install requests psutil
+# 克隆仓库
+git clone https://github.com/JYXDevVidz/axiom-agent.git
+cd axiom-agent
+
+# 安装依赖
+pip install -r requirements.txt
 ```
 
 ### 配置
 
-1. 编辑 `config.json`：
+创建 `config.json` 文件:
 
 ```json
 {
   "base_url": "https://api.openai.com/v1",
-  "api_key": "YOUR_API_KEY_HERE",
+  "api_key": "YOUR_API_KEY",
   "model_name": "gpt-4o",
   "max_retries": 3,
-  "retry_delay": 5,
-  "timeout": 90,
-  "max_tokens": 16000,
-  "max_content_size": 10240
+  "timeout": 90
 }
 ```
 
-2. 运行助手：
+### 启动服务
 
 ```bash
-python main.py
+python app.py
 ```
 
-## 🛠️ 内置工具
+服务默认在 http://localhost:5000 上运行。
 
-Axiom Agent 内置了六个核心工具：
+## 📝 API 使用示例
 
-| 工具名 | 描述 | 主要参数 |
-|-------|------|---------|
-| read | 读取文件内容 | file_path |
-| write | 写入文件内容 | file_path, content, mode |
-| execute | 执行系统命令 | command |
-| info | 显示重要信息 | content |
-| interact | 与用户交互 | content, prompt |
-| exit | 结束当前任务 | message |
+### 发送消息
 
-## ✨ 添加自定义工具
+```bash
+curl -X POST http://localhost:5000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "列出当前目录中的文件"}'
+```
 
-### 步骤 1: 创建工具实现
+响应示例:
 
-在 `tools` 目录下创建一个 Python 文件 (例如 `my_tool.py`):
+```json
+{
+  "type": "tool_result",
+  "tool": "execute",
+  "success": true,
+  "result": "file1.txt\nfile2.txt\nREADME.md",
+  "session_id": "12345678-1234-5678-1234-567812345678"
+}
+```
+
+### 用户交互
+
+当代理需要更多信息时，您将收到交互请求:
+
+```json
+{
+  "type": "interaction_required",
+  "interaction_id": "87654321-4321-8765-4321-876543210987",
+  "content": "请问您想创建什么内容的文件?",
+  "prompt": "文件内容: ",
+  "session_id": "12345678-1234-5678-1234-567812345678"
+}
+```
+
+回复交互:
+
+```bash
+curl -X POST http://localhost:5000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "session_id": "12345678-1234-5678-1234-567812345678",
+    "message": "这是示例文件内容",
+    "interaction_id": "87654321-4321-8765-4321-876543210987"
+  }'
+```
+
+## 🔧 工具列表
+
+Axiom Agent 预装了多种实用工具:
+
+- 📄 **read** - 读取文件内容
+- ✏️ **write** - 写入文件内容
+- 🖥️ **execute** - 执行系统命令
+- 📢 **info** - 显示信息给用户
+- 💬 **interact** - 请求用户输入
+- 🚪 **exit** - 结束当前任务
+
+## 🛠️ 开发自定义工具
+
+创建新工具只需三步:
+
+1. 在 `tools/` 目录创建工具模块文件 (例如 `my_tool.py`)
+2. 实现 `execute()` 函数作为入口点
+3. 在 `tools.json` 中注册工具
+
+示例工具:
 
 ```python
-def execute(**kwargs):
-    """
-    工具执行函数
-    """
+# tools/my_tool.py
+def execute(param1: str, param2: int = 0) -> dict:
+    """示例工具函数"""
     try:
-        # 从kwargs获取参数
-        param1 = kwargs.get('param1', 'default_value')
-        
-        # 执行工具功能
-        result = f"自定义工具结果: {param1}"
-        
-        # 返回结果
+        result = f"处理了 {param1} 和 {param2}"
         return {
             "success": True,
             "result": result
@@ -97,85 +143,31 @@ def execute(**kwargs):
         }
 ```
 
-### 步骤 2: 在tools.json中注册工具
+## 📚 完整文档
 
-```json
-"my_tool": {
-  "description": "我的自定义工具，用于...",
-  "implementation": "my_tool.py",
-  "args": {
-    "param1": "参数1的描述",
-    "param2": "参数2的描述"
-  }
-}
-```
+获取详细 API 参考、工具开发规范和高级配置，请参阅[完整文档](docs/full_documentation.md)。
 
-## 🔄 工具调用格式
+## 🔐 安全注意事项
 
-Axiom Agent 支持多种工具调用格式：
+Axiom Agent 可以执行系统命令，因此在生产环境中部署时应:
 
-### 1. 标准JSON格式
+- 实现适当的 API 认证和授权
+- 限制文件操作访问路径
+- 使用 `security.json` 定义敏感命令
+- 在公开网络上运行时使用 HTTPS
 
-```json
-{
-  "name": "tool_name",
-  "args": {
-    "arg1": "value1",
-    "arg2": "value2"
-  }
-}
-```
+## 🤝 贡献
 
-### 2. 函数调用样式
+欢迎贡献新工具、功能和改进！请确保遵循项目的代码规范，并为重要更改提供测试案例。
 
-```
-tool_name(arg1="value1", arg2="value2")
-```
+## 📜 许可证
 
-### 3. 自然语言描述
+[MIT License](LICENSE)
 
-```
-使用read工具读取文件"example.txt"
-```
+## 📧 联系方式
 
-## 📝 示例使用场景
+有问题或建议? [创建 Issue](https://github.com/JYXDevVidz/axiom-agent/issues) 
 
-### 文件分析
+---
 
-```
-> 分析当前目录下的Python文件并统计行数
-
-[工具执行过程...]
-
-总共发现5个Python文件，共1250行代码
-```
-
-### 数据处理
-
-```
-> 读取sales.csv，计算总销售额并生成报告
-
-[工具执行过程...]
-
-已生成销售报告report.md，总销售额: $12,536.42
-```
-
-## 🔒 注意事项
-
-- 始终验证外部输入以防安全风险
-- 工具的execute函数必须处理所有可能的异常
-- 确保您有权限执行所请求的操作
-
-## 📄 许可证
-
-MIT
-
-## 🙏 贡献
-
-欢迎提交问题和改进建议！
-
-1. Fork 项目
-2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 打开 Pull Request
+⭐ 如果您喜欢这个项目，请考虑给它点赞! ⭐
