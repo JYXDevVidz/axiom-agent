@@ -10,8 +10,6 @@
 
 Axiom Agent API 是一个通过 RESTful 接口与大型语言模型 (LLM) 交互的智能代理系统。它设计为高度模块化和可扩展，通过插件式工具架构使 AI 能够执行实际任务，如文件操作、命令执行、用户交互等。
 
-![Axiom Agent 架构](https://via.placeholder.com/800x400?text=Axiom+Agent+Architecture)
-
 ## ✨ 主要特性
 
 - 🔌 **完全模块化** - 所有功能通过工具模块实现，易于扩展
