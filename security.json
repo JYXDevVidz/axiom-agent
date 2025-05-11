@@ -1,0 +1,64 @@
+{
+  "sensitive_commands": [
+    {
+      "pattern": "rm",
+      "description": "删除文件或目录命令",
+      "os": ["linux", "darwin"]
+    },
+    {
+      "pattern": "rmdir",
+      "description": "删除目录命令",
+      "os": ["linux", "darwin", "windows"]
+    },
+    {
+      "pattern": "del",
+      "description": "删除文件命令",
+      "os": ["windows"]
+    },
+    {
+      "pattern": "format",
+      "description": "格式化磁盘命令",
+      "os": ["windows", "linux", "darwin"]
+    },
+    {
+      "pattern": "fdisk",
+      "description": "磁盘分区命令",
+      "os": ["linux", "darwin"]
+    },
+    {
+      "pattern": "mkfs",
+      "description": "创建文件系统命令",
+      "os": ["linux", "darwin"]
+    },
+    {
+      "pattern": ":(){",
+      "description": "fork炸弹",
+      "os": ["linux", "darwin"]
+    },
+    {
+      "pattern": "dd",
+      "description": "数据复制命令",
+      "os": ["linux", "darwin"]
+    },
+    {
+      "pattern": "chmod",
+      "description": "修改文件权限命令",
+      "os": ["linux", "darwin"]
+    },
+    {
+      "pattern": "chown",
+      "description": "修改文件所有者命令",
+      "os": ["linux", "darwin"]
+    },
+    {
+      "pattern": "sudo",
+      "description": "超级用户执行命令",
+      "os": ["linux", "darwin"]
+    },
+    {
+      "pattern": "diskpart",
+      "description": "磁盘分区工具",
+      "os": ["windows"]
+    }
+  ]
+}
